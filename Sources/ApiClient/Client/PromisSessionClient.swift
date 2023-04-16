@@ -27,7 +27,7 @@ public class PromiseSessionClient {
         }
     }
     
-    func run<T:Decodable>(endpoinit: EndPoint, requestEncoder: HTTPEncoder, decoder: JSONDecoder) -> Promise<T> {
+    func run<T:Decodable>(endpoinit: EndPoint, requestEncoder: URLRequestEncoder, decoder: JSONDecoder) -> Promise<T> {
         
         return Promise() { [weak self] (seal: Resolver<T>) in
             
@@ -68,7 +68,7 @@ public class PromiseSessionClient {
         }
     }
 
-    private func getRequest<T: Decodable>(from endpoint: EndPoint, requestEncoder: HTTPEncoder, resolver: Resolver<T>) -> URLRequest? {
+    private func getRequest<T: Decodable>(from endpoint: EndPoint, requestEncoder: URLRequestEncoder, resolver: Resolver<T>) -> URLRequest? {
         do {
             return try requestEncoder.request(from: endpoint.baseURL ?? baseURL, endPoint: endpoint)
         }catch {

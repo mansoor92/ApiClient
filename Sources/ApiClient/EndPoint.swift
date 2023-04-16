@@ -17,6 +17,11 @@ public protocol HTTPEncoding {
 	var headers: [String:String] {get}
 }
 
+public enum ContentType: String {
+    case json = "application/json"
+    case form = "application/x-www-form-urlencoded"
+}
+
 public struct EncodingType: HTTPEncoding {
     
     public let headers: [String:String]
@@ -38,15 +43,29 @@ public struct EndPoint {
 	let	queryItems: Encodable
 	let body: Encodable?
 	let headers: [String:String]
-	let encoding: HTTPEncoding
 
-	public init(method: HTTPMethod, baseURL: URL? = nil, path: String, encoding: HTTPEncoding, queryItems: Encodable = [String:String](), body: Encodable? = nil, headers: [String:String] = [:]) {
-		self.method = method
-		self.baseURL = baseURL
-		self.path = path
-		self.queryItems = queryItems
-		self.body = body
-		self.headers = headers
-		self.encoding = encoding
+    private init(method: HTTPMethod, baseURL: URL?, path: String, queryItems: Encodable, body: Encodable?, headers: [String:String]) {
+        self.method = method
+        self.baseURL = baseURL
+        self.path = path
+        self.queryItems = queryItems
+        self.body = body
+        self.headers = headers
+    }
+    
+	public init(method: HTTPMethod, baseURL: URL? = nil, path: String, contentType: ContentType, queryItems: Encodable = [String:String](), body: Encodable? = nil, headers: [String:String] = [:]) {
+        
+        var endPointHeaders = headers
+        endPointHeaders["Content-Type"] = contentType.rawValue
+        
+        self.init(method: method, baseURL: baseURL, path: path, queryItems: queryItems, body: body, headers: endPointHeaders)
 	}
+    
+    public init(method: HTTPMethod, baseURL: URL? = nil, path: String, queryItems: Encodable = [String:String](), multipartForm: MultipartForm?, headers: [String:String] = [:]) {
+        
+        var endPointHeaders = headers
+        endPointHeaders["Content-Type"] = multipartForm?.contentType
+        
+        self.init(method: method, baseURL: baseURL, path: path, queryItems: queryItems, body: multipartForm?.bodyData, headers: endPointHeaders)
+    }
 }

@@ -7,7 +7,13 @@
 
 import Foundation
 
-public class DefaultHTTPEncoder: HTTPEncoder {
+public protocol URLRequestEncoder {
+    var jsonEncoder: JSONEncoder { get }
+    func request(from baseURL: URL, endPoint: EndPoint) throws -> URLRequest
+}
+
+
+public class DefaultURLRequestEncoder: URLRequestEncoder {
 
     public let jsonEncoder: JSONEncoder
     
@@ -22,18 +28,11 @@ public class DefaultHTTPEncoder: HTTPEncoder {
 		request.httpMethod = endPoint.method.rawValue
 		request.allHTTPHeaderFields = endPoint.headers
 
-		//appending query items
 		let queryItems = try encode(queryItems: endPoint.queryItems, encoder: jsonEncoder)
 		request.url = try request.url?.appendingQueryItems(queryItems)
 
-
-		//appending body
 		if let body = endPoint.body {
 			request.httpBody = try encode(body: body, encoder: jsonEncoder)
-		}
-
-		for (key,value) in endPoint.encoding.headers {
-			request.allHTTPHeaderFields?[key] = value
 		}
 
 		return request
@@ -70,48 +69,4 @@ public class DefaultHTTPEncoder: HTTPEncoder {
 	}
 }
 
-
-public extension Encodable {
-
-	func getData(encoder: JSONEncoder) throws -> Data {
-		return try encoder.encode(self)
-	}
-
-//	var json: [String:Any] {
-//		guard let data =  jsonEncodedData else {
-//			return [:]
-//		}
-//		guard let jsonObject = try? JSONSerialization.jsonObject(with: data, options: [])  else {
-//			return [:]
-//		}
-//		guard let dictionary =  jsonObject as? [String:Any] else {
-//			return [:]
-//		}
-//		return dictionary
-//	}
-}
-
-extension URL {
-    func appendingQueryItems(_ items: [URLQueryItem]) throws -> URL {
-        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false) else {
-            throw RequestError.invalideQueryParam("Can't create `URLComponents` from the url: \(self).")
-        }
-        guard !items.isEmpty else {
-            return self
-        }
-        
-        let existingQueryItems = components.queryItems ?? []
-        components.queryItems = existingQueryItems + items
-
-        // Manually replace all occurrences of "+" in the query because it can be understood as a placeholder
-        // value for a space. We want to keep it as "+" so we have to manually percent-encode it.
-        components.percentEncodedQuery = components.percentEncodedQuery?
-            .replacingOccurrences(of: "+", with: "%2B")
-
-        guard let newURL = components.url else {
-            throw RequestError.invalideQueryParam("Can't create a new `URL` after appending query items: \(items).")
-        }
-        return newURL
-    }
-}
 
