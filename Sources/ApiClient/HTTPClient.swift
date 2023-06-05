@@ -53,7 +53,7 @@ extension HTTPClient {
         
         do {
             let request = try getRequest(from: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL)
-            session.dataTask(with: request) { data, response, error in
+           let task = session.dataTask(with: request) { data, response, error in
                 
                 guard let data = data, let response = response else {
                     completion(.failure(error ?? RequestError.unknown))
@@ -67,6 +67,7 @@ extension HTTPClient {
                     completion(.failure(error))
                 }
             }
+            task.resume()
         } catch {
             return completion(.failure(error))
         }
