@@ -30,7 +30,7 @@ public struct MultipartForm: Hashable, Equatable {
         
         public init(name: String, value: String) {
             let data = value.data(using: .utf8, allowLossyConversion: true)!
-            self.init(name: name, data: data, filename: nil, contentType: nil)
+            self.init(name: name, data: data, filename: nil, contentType: "text/plain; charset=ISO-8859-1")
         }
     }
     

@@ -11,11 +11,16 @@ class ResponseParser {
     
     func parse<T: Decodable>(data: Data, response: URLResponse, decoder: JSONDecoder) throws -> Response<T> {
         let validatedData = try validate(data: data, response: response)
-        let value = try decoder.decode(T.self, from: validatedData)
+        let value: T
+        if let decodedValue = (validatedData as? T) {
+            value = decodedValue
+        } else {
+            value = try decoder.decode(T.self, from: validatedData)
+        }
         return Response(value: value, response: response)
     }
     
-    func wrap(data: Data, response: URLResponse) throws -> Response<Data> {
+    func parse(data: Data, response: URLResponse) throws -> Response<Data> {
         let validatedData = try validate(data: data, response: response)
         return Response(value: validatedData, response: response)
     }
