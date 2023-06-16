@@ -31,45 +31,28 @@ public class HTTPClient {
 }
 
 // MARK: Callback
+@available(macOS 12.0, *)
 extension HTTPClient {
     
     ///execute a url request and return result on given queue using combine framework
-    public func run<T: Decodable>(endpoint: EndPoint, requestEncoder: URLRequestEncoder, decoder: JSONDecoder, overrideBaseURL: URL?, completion: @escaping (Result<Response<T>, Error>) -> Void) {
+    public func run<T: Decodable>(endpoint: EndPoint, requestEncoder: URLRequestEncoder, decoder: JSONDecoder, overrideBaseURL: URL?) async throws -> Response<T> {
         
-        return runDataTask(endpoint: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL, responseMap: { (data, response) in
+        return try await runDataTask(endpoint: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL, responseMap: { (data, response) in
             try ResponseParser().parse(data: data, response: response, decoder: decoder)
-        }, completion: completion)
+        })
      }
     
     ///execute a url request and return raw data  on given queue using combine framework
-    public func run(endpoint: EndPoint, requestEncoder: URLRequestEncoder, overrideBaseURL: URL?, completion: @escaping (Result<Response<Data>, Error>) -> Void) {
-        
-        return runDataTask(endpoint: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL, responseMap: { (data, response) in
+    public func run(endpoint: EndPoint, requestEncoder: URLRequestEncoder, overrideBaseURL: URL?) async throws -> Response<Data> {
+        return try await runDataTask(endpoint: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL, responseMap: { (data, response) in
             try ResponseParser().parse(data: data, response: response)
-        }, completion: completion)
+        })
      }
     
-    private func runDataTask<T>(endpoint: EndPoint, requestEncoder: URLRequestEncoder, overrideBaseURL: URL?, responseMap: @escaping (Data,URLResponse) throws -> Response<T>, completion: @escaping (Result<Response<T>, Error>) -> Void) {
+    private func runDataTask<T>(endpoint: EndPoint, requestEncoder: URLRequestEncoder, overrideBaseURL: URL?, responseMap: (Data,URLResponse) throws -> Response<T>) async throws -> Response<T> {
         
-        do {
-            let request = try getRequest(from: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL)
-           let task = session.dataTask(with: request) { data, response, error in
-                
-                guard let data = data, let response = response else {
-                    completion(.failure(error ?? RequestError.unknown))
-                    return
-                }
-                
-                do {
-                    let response = try responseMap(data, response)
-                    completion(.success(response))
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-            task.resume()
-        } catch {
-            return completion(.failure(error))
-        }
+        let request = try getRequest(from: endpoint, requestEncoder: requestEncoder, overrideBaseURL: overrideBaseURL)
+        let result: (data: Data, response: URLResponse) = try await session.data(for: request)
+        return try responseMap(result.data, result.response)
     }
 }
